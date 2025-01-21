@@ -1,0 +1,161 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Crypto Bubble Visualization</title>
+    <style>
+        body {
+            font-family: Arial, sans-serif;
+            background-color: #f4f7fb; /* Light gray background */
+            margin: 0;
+            padding: 0;
+            display: flex;
+            justify-content: center;
+            align-items: center;
+            height: 100vh;
+        }
+
+        #bubble-chart {
+            width: 80%;
+            height: 80vh;
+            position: relative;
+            background-color: #ffffff; /* White background for the chart */
+            border-radius: 10px;
+            box-shadow: 0 4px 10px rgba(0, 0, 0, 0.1); /* Soft shadow around the chart */
+            overflow: hidden; /* Prevents bubbles from overflowing outside the chart */
+        }
+
+        .bubble {
+            position: absolute;
+            border-radius: 50%;
+            text-align: center;
+            font-size: 12px;
+            color: rgb(0, 0, 0);
+            padding: 8px;
+            display: flex;
+            justify-content: center;
+            align-items: center;
+            flex-direction: column;
+            transition: transform 0.3s ease, opacity 0.3s ease;
+            cursor: pointer;
+        }
+
+        /* Bubble color gradients */
+        .bubble {
+            background: radial-gradient(circle, rgba(255, 255, 255, 0.7) 0%, rgba(0, 123, 255, 0.7) 70%, rgba(0, 255, 255, 0.6) 100%);
+        }
+
+        .green {
+            background: radial-gradient(circle, rgba(255, 255, 255, 0.7) 0%, rgba(40, 167, 69, 0.7) 70%, rgba(144, 238, 144, 0.5) 100%);
+        }
+
+        .red {
+            background: radial-gradient(circle, rgba(255, 255, 255, 0.7) 0%, rgba(220, 53, 69, 0.7) 70%, rgba(255, 99, 132, 0.5) 100%);
+        }
+
+        .blue {
+            background: radial-gradient(circle, rgba(255, 255, 255, 0.7) 0%, rgba(13, 110, 253, 0.7) 70%, rgba(116, 185, 255, 0.5) 100%);
+        }
+
+        .bubble .coin {
+            font-size: 14px;
+            font-weight: bold;
+            margin-bottom: 5px;
+        }
+
+        .bubble .change {
+            font-size: 10px;
+        }
+
+        .bubble:hover {
+            transform: scale(1.1); /* Scale up on hover */
+            opacity: 0.9; /* Slight transparency on hover */
+        }
+
+        /* Tooltip styling */
+        .tooltip {
+            position: absolute;
+            background-color: rgba(0, 0, 0, 0.7);
+            color: white;
+            padding: 5px;
+            border-radius: 5px;
+            font-size: 10px;
+            display: none;
+        }
+    </style>
+</head>
+<body>
+    <div id="bubble-chart"></div>
+
+    <!-- Tooltip div to show coin info on hover -->
+    <div class="tooltip" id="tooltip"></div>
+
+    <!-- Include the socket.io client script -->
+    <script src="https://cdn.socket.io/4.4.1/socket.io.min.js" integrity="sha384-fKnu0iswBIqkjxrhQCTZ7qlLHOFEgNkRmK2vaO/LbTZSXdJfAu6ewRBdwHPhBo/H" crossorigin="anonymous"></script>
+
+    <script>
+        // Connect to the socket
+        var socket = io.connect('http://' + document.domain + ':' + location.port);
+
+        // Tooltip element
+        const tooltip = document.getElementById('tooltip');
+
+        // On receiving data from the backend
+        socket.on('update_bubble_data', function(data) {
+            // console.log(data)
+            const bubbleChart = document.getElementById('bubble-chart');
+
+            // Clear the previous bubbles to avoid overlap
+            bubbleChart.innerHTML = '';
+
+            // Create new bubbles based on the received data
+            data.X.forEach((x, index) => {
+                const bubble = document.createElement('div');
+                const size = data.Bubble_Size[index];
+                const color = data.Color[index]; // You can pass different color data here
+                const coin = data.Coin[index];
+                const change = data.Change_5m[index].toFixed(2);
+
+                // Apply different color gradients based on the data (color could be a dynamic value based on sentiment or range)
+                bubble.classList.add('bubble');
+                bubble.style.width = `${size}px`;
+                bubble.style.height = `${size}px`;
+                bubble.style.left = `${x}%`;
+                bubble.style.top = `${data.Y[index]}%`;
+
+                // Apply dynamic color for the bubble
+                if (color === "green") {
+                    bubble.classList.add('green');
+                } else if (color === "red") {
+                    bubble.classList.add('red');
+                } else {
+                    bubble.classList.add('blue'); // Adding a third color (blue) for variation
+                }
+
+                // Set bubble content
+                bubble.innerHTML = `
+                    <div class="coin">${coin}</div>
+                    <div class="change">${change}%</div>
+                `;
+
+                // Show tooltip on hover
+                bubble.addEventListener('mouseenter', function() {
+                    tooltip.style.display = 'block';
+                    tooltip.textContent = `${coin}: ${change}%`;
+                    tooltip.style.left = `${x}%`;
+                    tooltip.style.top = `${data.Y[index]}%`;
+                });
+
+                // Hide tooltip when mouse leaves the bubble
+                bubble.addEventListener('mouseleave', function() {
+                    tooltip.style.display = 'none';
+                });
+
+                // Append bubble to chart
+                bubbleChart.appendChild(bubble);
+            });
+        });
+    </script>
+</body>
+</html>

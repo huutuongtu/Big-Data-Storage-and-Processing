@@ -1,0 +1,11 @@
+confluent_kafka
+flask
+cassandra-driver
+six
+cqlsh
+kafka-python
+pyspark
+pandas
+pymongo[spark]
+dnspython
+flask_socketio
